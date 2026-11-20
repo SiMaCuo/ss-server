@@ -9,8 +9,8 @@ import (
 	"net"
 )
 
-// ppoe connection mtu seem to be 1492, ip(v6) header 20(40), tcp header 20
-const SS_TCP_CHUNK_LEN = 1420
+// ppoe connection mtu seem to be 1492, ip(v6) header 20(40), tcp header 20, timestamps 12
+const SS_TCP_CHUNK_LEN = 1400
 
 // increment little-endian encoded unsigned integer b. Wrap around on overflow.
 func increment(b []byte) {
