@@ -9,8 +9,10 @@ import (
 	"net"
 )
 
-// ppoe connection mtu seem to be 1492, ip(v6) header 20(40), tcp header 20, timestamps 12
-const SS_TCP_CHUNK_LEN = 1400
+const (
+	KB            = 1024
+	ENC_CHUNK_LEN = 13 * KB
+)
 
 // increment little-endian encoded unsigned integer b. Wrap around on overflow.
 func increment(b []byte) {
@@ -131,7 +133,7 @@ func (b *AeadDecryptor) setName(name string) {
 
 func NewAeadDecryptor(rd net.Conn, aead cipher.AEAD) *AeadDecryptor {
 	return &AeadDecryptor{
-		Reader: bufio.NewReaderSize(rd, 4096),
+		Reader: bufio.NewReaderSize(rd, 64*KB),
 		reader: rd,
 		AEAD:   aead,
 		nonce:  make([]byte, aead.NonceSize()),
@@ -151,7 +153,7 @@ type AeadEncryptor struct {
 }
 
 func NewAeadEncryptor(w io.Writer, aead cipher.AEAD) *AeadEncryptor {
-	sealBuf := make([]byte, SS_TCP_CHUNK_LEN)
+	sealBuf := make([]byte, ENC_CHUNK_LEN)
 	return &AeadEncryptor{
 		Writer:     w,
 		AEAD:       aead,
@@ -165,7 +167,7 @@ func NewAeadEncryptor(w io.Writer, aead cipher.AEAD) *AeadEncryptor {
 
 func (b *AeadEncryptor) ReadFrom(r io.Reader) (amt int64, err error) {
 	reader := bufio.NewReader(r)
-	chunkSize := SS_TCP_CHUNK_LEN - 2*b.Overhead() - 2
+	chunkSize := ENC_CHUNK_LEN - 2*b.Overhead() - 2
 	conn, typOk := r.(net.Conn)
 	for {
 		if typOk {
